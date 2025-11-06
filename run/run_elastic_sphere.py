@@ -27,7 +27,7 @@ def main():
 
     # Initialize sphere instead of loading from h5 file
     # Match H5 center position: (0.5, 0.5, 0.5) to keep sphere well within bounds
-    mpm_solver.init_sphere(
+    mpm_solver.init_particles_sphere(
         center=(0.5, 0.5, 0.5),  # Center position matching H5 data (well within bounds)
         radius=0.05,              # Smaller radius to match H5 data span (~0.1 in x/y)
         n_grid=150,               # Grid resolution
@@ -44,13 +44,13 @@ def main():
         'g': [0.0, 0.0, -4.0],
         "density": 200.0
     }
-    mpm_solver.set_parameters_dict(material_params)
+    mpm_solver.set_parameters(material_params)
 
-    mpm_solver.finalize_mu_lam_bulk() # set mu and lambda from the E and nu input
+    mpm_solver.compute_mu_lam_bulk() # set mu and lambda from the E and nu input
 
     mpm_solver.add_surface_collider((0.0, 0.0, 0.13), (0.0,0.0,1.0), 'sticky', 0.0)
 
-    directory_to_save = './sim_results/elastic_sphere'
+    directory_to_save = './results/elastic_sphere'
 
     save_data_at_frame(mpm_solver, directory_to_save, 0, save_to_ply=True, save_to_h5=False)
 

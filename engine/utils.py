@@ -7,10 +7,8 @@ import warp.torch
 import torch
 
 
-# Warp structs and kernels
 @wp.struct
 class MPMModelStruct:
-    ####### essential #######
     grid_lim: float
     n_particles: int
     n_grid: int
@@ -33,16 +31,14 @@ class MPMModelStruct:
     xi: float
 
     ####### for damping
-    rpic_damping: float
+    rpic: float
     grid_v_damping_scale: float
 
-    ####### for PhysGaussian: covariance
     
 
 
 @wp.struct
 class MPMStateStruct:
-    ###### essential #####
     # particle
     particle_x: wp.array(dtype=wp.vec3)  # current position
     particle_v: wp.array(dtype=wp.vec3)  # particle velocity
@@ -57,8 +53,6 @@ class MPMStateStruct:
     particle_mass: wp.array(dtype=float)  # mass
     particle_density: wp.array(dtype=float)  # density
 
-    particle_selection: wp.array(dtype=int) # only particle_selection[p] = 0 will be simulated
-
     # grid
     grid_m: wp.array(dtype=float, ndim=3)
     grid_v_in: wp.array(dtype=wp.vec3, ndim=3)  # grid node momentum/velocity
@@ -67,7 +61,6 @@ class MPMStateStruct:
     )  # grid node momentum/velocity, after grid update
 
 
-# for various boundary conditions
 @wp.struct
 class Dirichlet_collider:
     point: wp.vec3
@@ -158,7 +151,7 @@ def save_data_at_frame(mpm_solver, dir_name, frame, save_to_ply = True, save_to_
     fullfilename = dir_name + '/sim_' + str(frame).zfill(10) + '.h5'
 
     if save_to_ply:
-        particle_position_to_ply(mpm_solver, fullfilename[:-2]+'ply')
+        particle_to_ply(mpm_solver, fullfilename[:-2]+'ply')
     
     if save_to_h5:
 
@@ -181,7 +174,7 @@ def save_data_at_frame(mpm_solver, dir_name, frame, save_to_ply = True, save_to_
         newFile.create_dataset("C", data=C_np) # particle C
         print("save siumlation data at frame ", frame, " to ", fullfilename)
 
-def particle_position_to_ply(mpm_solver, filename):
+def particle_to_ply(mpm_solver, filename):
     # position is (n,3)
     if os.path.exists(filename):
         os.remove(filename)

@@ -25,29 +25,27 @@ def main():
 
     mpm_solver = MPM_Solver(10) # initialize with whatever number is fine. it will be reintialized
 
-    # Load sampling data from an external h5 file, containing initial position (n,3) and particle_volume (n,)
-    mpm_solver.load_from_h5("data/sand_column.h5", n_grid = 150, device=dvc) 
-
-    # Raise the object to drop from higher - shift all particles upward in z-direction
-    drop_height = 0.3  # Raise object by this amount (adjust as needed)
-    position_np = mpm_solver.mpm_state.particle_x.numpy()
-    position_np[:, 2] = position_np[:, 2] + drop_height
-    mpm_solver.mpm_state.particle_x = wp.from_numpy(position_np, dtype=wp.vec3, device=dvc)
-
-    # Optionally, you can modify particle volumes after loading
-    # Get volumes from numpy and modify if needed
-    volume_np = mpm_solver.mpm_state.particle_vol.numpy()
-    volume_np = np.ones(mpm_solver.n_particles) * 2.5e-8
-    mpm_solver.mpm_state.particle_vol = wp.from_numpy(volume_np, dtype=float, device=dvc)
+    # Initialize sphere instead of loading from h5 file
+    # Match H5 center position: (0.5, 0.5, 0.5) to keep sphere well within bounds
+    mpm_solver.init_particles_sphere(
+        center=(0.5, 0.5, 0.5),  # Center position matching H5 data (well within bounds)
+        radius=0.05,              # Smaller radius to match H5 data span (~0.1 in x/y)
+        n_grid=150,               # Grid resolution
+        grid_lim=1.0,             # Grid domain size
+        device=dvc
+    )
 
     # Note: You must provide 'density=..' to set particle_mass = density * particle_volume
 
     material_params = {
         'E': 2000.0,
         'nu': 0.2,
-        "material": "jelly",  # elastic material
+        "material": "metal",  # Von Mises plasticity material
         'g': [0.0, 0.0, -4.0],
-        "density": 200.0
+        "density": 200.0,
+        "yield_stress": 100.0,  # Yield stress threshold for Von Mises plasticity
+        "hardening": 1,          # Enable isotropic hardening (0 = no hardening, 1 = hardening)
+        "xi": 0.1               # Hardening coefficient (how much yield stress increases with plastic strain)
     }
     mpm_solver.set_parameters(material_params)
 
@@ -55,7 +53,7 @@ def main():
 
     mpm_solver.add_surface_collider((0.0, 0.0, 0.13), (0.0,0.0,1.0), 'sticky', 0.0)
 
-    directory_to_save = './results/elastic'
+    directory_to_save = './results/vonmises_sphere'
 
     save_data_at_frame(mpm_solver, directory_to_save, 0, save_to_ply=True, save_to_h5=False)
 
@@ -67,4 +65,5 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 

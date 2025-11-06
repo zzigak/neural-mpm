@@ -11,8 +11,6 @@ from engine.utils import *
 import numpy as np
 
 
-
-
 def main():
     wp.init()
     wp.config.verify_cuda = True
@@ -30,8 +28,8 @@ def main():
     particle_volume = particle_spacing ** 3
 
     radius = 0.025
-    center1 = np.array([0.5, 0.5, 0.45], dtype=np.float32)
-    center2 = np.array([0.5, 0.5, 0.55], dtype=np.float32)
+    center1 = np.array([0.5, 0.5, 0.45], dtype=np.float32)  # Bottom sphere (Von Mises)
+    center2 = np.array([0.5, 0.5, 0.55], dtype=np.float32)  # Top sphere (Elastic)
 
     def generate_sphere_positions(center, radius, particle_spacing):
         extent = radius
@@ -52,13 +50,13 @@ def main():
         positions = positions[mask]
         return positions.astype(np.float32)
 
-    positions1 = generate_sphere_positions(center1, radius, particle_spacing)
-    positions2 = generate_sphere_positions(center2, radius, particle_spacing)
+    positions1 = generate_sphere_positions(center1, radius, particle_spacing)  # Bottom (Von Mises)
+    positions2 = generate_sphere_positions(center2, radius, particle_spacing)  # Top (Elastic)
     all_positions = np.vstack([positions1, positions2])
     all_positions = np.ascontiguousarray(all_positions)
 
-    print(f"Sphere 1 particles: {len(positions1)}")
-    print(f"Sphere 2 particles: {len(positions2)}")
+    print(f"Bottom sphere (Von Mises) particles: {len(positions1)}")
+    print(f"Top sphere (Elastic) particles: {len(positions2)}")
     print(f"Total particles: {len(all_positions)}")
 
     mpm_solver.dim, mpm_solver.n_particles = 3, len(all_positions)
@@ -92,18 +90,33 @@ def main():
 
     print("Total particles: ", mpm_solver.n_particles)
 
+    # Set material parameters - use "metal" globally but control via yield_stress
     material_params = {
         'E': 2000.0,
         'nu': 0.2,
-        "material": "jelly",
+        "material": "metal",  # Set to metal to enable Von Mises return mapping
         'g': [0.0, 0.0, -4.0],
-        "density": 200.0
+        "density": 200.0,
+        "hardening": 1,          # Enable hardening
+        "xi": 0.1               # Hardening coefficient
     }
     mpm_solver.set_parameters(material_params)
     mpm_solver.compute_mu_lam_bulk()
+
+    # Set yield_stress per-particle:
+    # - Bottom sphere (first len(positions1) particles): normal yield stress (Von Mises)
+    # - Top sphere (remaining particles): very high yield stress (effectively elastic)
+    yield_stress_array = np.ones(mpm_solver.n_particles, dtype=np.float64)
+    yield_stress_array[:len(positions1)] = 100.0  # Bottom sphere: Von Mises with yield_stress=100
+    yield_stress_array[len(positions1):] = 1e10   # Top sphere: effectively elastic (never yields)
+    
+    mpm_solver.mpm_model.yield_stress = wp.from_numpy(
+        yield_stress_array, dtype=float, device=dvc
+    )
+
     mpm_solver.add_surface_collider((0.0, 0.0, 0.13), (0.0,0.0,1.0), 'sticky', 0.0)
 
-    directory_to_save = './esults/elastic_two_spheres'
+    directory_to_save = './results/mixed_two_spheres'
     save_data_at_frame(mpm_solver, directory_to_save, 0, save_to_ply=True, save_to_h5=False)
     for k in range(1, num_frames + 1):
         mpm_solver.p2g2p(k, dt, device=dvc)
@@ -112,5 +125,4 @@ def main():
 
 if __name__ == "__main__":
     main()
-
 
