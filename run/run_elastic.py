@@ -23,7 +23,7 @@ def main():
     dt = 0.002  # time step
     num_frames = 600  # total number of frames to simulate
 
-    mpm_solver = MPM_Simulator_WARP(10) # initialize with whatever number is fine. it will be reintialized
+    mpm_solver = MPM_Solver(10) # initialize with whatever number is fine. it will be reintialized
 
     # Load sampling data from an external h5 file, containing initial position (n,3) and particle_volume (n,)
     mpm_solver.load_from_sampling("data/sand_column.h5", n_grid = 150, device=dvc) 

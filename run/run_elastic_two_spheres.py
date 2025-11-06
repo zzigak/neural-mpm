@@ -21,7 +21,7 @@ def main():
     dt = 0.002
     num_frames = 600
 
-    mpm_solver = MPM_Simulator_WARP(10)
+    mpm_solver = MPM_Solver(10)
 
     n_grid = 150
     grid_lim = 1.0

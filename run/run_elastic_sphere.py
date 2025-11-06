@@ -23,7 +23,7 @@ def main():
     dt = 0.002  # time step
     num_frames = 600  # total number of frames to simulate
 
-    mpm_solver = MPM_Simulator_WARP(10) # initialize with whatever number is fine. it will be reintialized
+    mpm_solver = MPM_Solver(10) # initialize with whatever number is fine. it will be reintialized
 
     # Initialize sphere instead of loading from h5 file
     # Match H5 center position: (0.5, 0.5, 0.5) to keep sphere well within bounds
